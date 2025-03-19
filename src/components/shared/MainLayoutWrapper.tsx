@@ -1,7 +1,7 @@
 import React, { ReactNode } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Layout from './Layout';
-import ChatBot from '../ChatBot/ChatBot';
+import ChatBot from '../ChatBot2/ChatBot';
 
 interface MainLayoutWrapperProps {
   children: ReactNode;

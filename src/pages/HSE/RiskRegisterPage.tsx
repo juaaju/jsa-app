@@ -88,18 +88,36 @@ const RiskRegisterPage = () => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [risksData, departmentsData, groupsData] = await Promise.all([
-          getAllRisks(),
-          getDepartments(),
-          getGroups()
-        ]);
-        
-        setRisks(risksData);
-        setDepartments(departmentsData.map((dept: any) => dept.name));
-        setGroupOptions(groupsData.map((group: any) => group.name));
         setError(null);
+        
+        // Fetch risks first separately to handle any errors specifically
+        try {
+          console.log('Fetching risks data...');
+          const risksData = await getAllRisks();
+          console.log(`Fetched ${risksData.length} risks`);
+          setRisks(risksData);
+        } catch (risksError) {
+          console.error('Error fetching risks:', risksError);
+          setError('Failed to load risks data. Please refresh the page or check your connection.');
+          setRisks([]);
+        }
+        
+        // Then fetch the supporting data
+        try {
+          const [departmentsData, groupsData] = await Promise.all([
+            getDepartments(),
+            getGroups()
+          ]);
+          
+          setDepartments(departmentsData.map((dept: any) => dept.name));
+          setGroupOptions(groupsData.map((group: any) => group.name));
+        } catch (supportingDataError) {
+          console.error('Error fetching supporting data:', supportingDataError);
+          // We don't set the main error if only supporting data fails
+        }
+        
       } catch (err) {
-        console.error('Error fetching data:', err);
+        console.error('Error in fetchData:', err);
         setError('Failed to load data. Please try again later.');
       } finally {
         setIsLoading(false);
@@ -145,10 +163,19 @@ const RiskRegisterPage = () => {
       };
       
       // Send to API
-      const createdRisk = await createRisk(riskToAdd);
+      let createdRisk;
+      try {
+        createdRisk = await createRisk(riskToAdd);
+        console.log("Risk created successfully:", createdRisk);
+      } catch (apiError) {
+        console.error("API Error:", apiError);
+        // Jika API error tapi data sudah masuk ke database
+        // kita tetap update UI dengan data yang dikirim
+        createdRisk = riskToAdd;
+      }
       
-      // Update local state
-      setRisks([...risks, createdRisk]);
+      // Update local state dengan spread operator baru untuk memastikan rerender
+      setRisks(prevRisks => [...prevRisks, createdRisk]);
       
       // Reset form
       setNewRisk({

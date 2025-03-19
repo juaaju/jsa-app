@@ -172,8 +172,8 @@ const ChatBot: React.FC = () => {
               <Link to="/" className="nav-link">
                 Beranda <ExternalLink size={14} />
               </Link>
-              <Link to="/new-jsa" className="nav-link">
-                Buat JSA <ExternalLink size={14} />
+              <Link to="/new-l2sa" className="nav-link">
+                Buat L2SA <ExternalLink size={14} />
               </Link>
               <Link to="/analysis" className="nav-link">
                 Analisis Risiko <ExternalLink size={14} />

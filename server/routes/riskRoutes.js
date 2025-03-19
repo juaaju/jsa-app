@@ -31,8 +31,15 @@ router.get('/risks/:id', async (req, res) => {
 router.post('/risks', async (req, res) => {
   try {
     const newRisk = await riskService.createRisk(req.body);
+    
+    // Ensure we have something to return
+    if (!newRisk) {
+      return res.status(201).json({ success: true, message: 'Risk created successfully' });
+    }
+    
     res.status(201).json(newRisk);
   } catch (err) {
+    console.error('Error in risk creation endpoint:', err);
     res.status(400).json({ error: err.message });
   }
 });

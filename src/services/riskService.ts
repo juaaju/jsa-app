@@ -130,12 +130,47 @@ interface ApiRisk {
   // Fungsi untuk mendapatkan semua risiko
   export const getAllRisks = async (): Promise<FrontendRisk[]> => {
     try {
-      const response = await fetch(`${API_URL}/risks`);
+      const response = await fetch(`${API_URL}/risks`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate'
+        }
+      });
+      
       if (!response.ok) {
         throw new Error(`Error: ${response.status}`);
       }
-      const apiRisks = await response.json();
-      return apiRisks.map(mapApiToFrontend);
+      
+      const text = await response.text();
+      if (!text || text.trim() === '') {
+        console.warn('Empty response received from /risks endpoint');
+        return [];
+      }
+      
+      try {
+        const apiRisks = JSON.parse(text);
+        console.log(`Loaded ${apiRisks.length} risks from server`);
+        
+        // Validasi data yang diterima
+        if (!Array.isArray(apiRisks)) {
+          console.error('Server returned non-array data:', apiRisks);
+          return [];
+        }
+        
+        return apiRisks.map(risk => {
+          try {
+            return mapApiToFrontend(risk);
+          } catch (mapError) {
+            console.error('Error mapping risk:', risk, mapError);
+            return null;
+          }
+        }).filter(risk => risk !== null) as FrontendRisk[];
+      } catch (parseError) {
+        console.error('Error parsing JSON response:', parseError);
+        console.error('Raw response:', text);
+        throw parseError;
+      }
     } catch (error) {
       console.error('Error fetching risks:', error);
       throw error;
@@ -168,11 +203,32 @@ interface ApiRisk {
         },
         body: JSON.stringify(apiRisk),
       });
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
+      
+      // Jika status kode berhasil (2xx)
+      if (response.status >= 200 && response.status < 300) {
+        try {
+          // Coba parse JSON jika ada
+          const text = await response.text();
+          if (!text || text.trim() === '') {
+            console.warn('Empty response received, but operation likely successful');
+            // Kembalikan objek risk yang dikirim jika tidak ada respons
+            return frontendRisk;
+          }
+          
+          try {
+            const createdApiRisk = JSON.parse(text);
+            return mapApiToFrontend(createdApiRisk);
+          } catch (parseError) {
+            console.warn("Response couldn't be parsed as JSON, but request was successful", parseError);
+            return frontendRisk;
+          }
+        } catch (textError) {
+          console.warn("Couldn't read response text, but request was successful", textError);
+          return frontendRisk;
+        }
+      } else {
+        throw new Error(`Server error: ${response.status}`);
       }
-      const createdApiRisk = await response.json();
-      return mapApiToFrontend(createdApiRisk);
     } catch (error) {
       console.error('Error creating risk:', error);
       throw error;
