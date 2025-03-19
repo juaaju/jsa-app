@@ -1,11 +1,12 @@
 import { Routes, Route, useNavigate } from "react-router-dom";
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { FileText, MapPin, Calendar, Wrench, Users, Loader } from 'lucide-react';
+import { FileText, MapPin, Calendar, Wrench, Users, Loader, Plus, X } from 'lucide-react';
 
-const JobInputPage = () => {
+const L2SAInputPage = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
+    const [teamMembers, setTeamMembers] = useState([{ name: '', role: '' }]);
     
     const handleAnalysis = () => {
         setIsLoading(true);
@@ -14,31 +15,70 @@ const JobInputPage = () => {
         setTimeout(() => {
             setIsLoading(false);
             navigate("/analysis");
-        }, 7000); // 2.5 seconds delay to simulate processing
+        }, 1000); // 7 seconds delay to simulate processing
+    };
+
+    const addTeamMember = () => {
+        setTeamMembers([...teamMembers, { name: '', role: '' }]);
+    };
+
+    const removeTeamMember = (index) => {
+        const updatedMembers = [...teamMembers];
+        updatedMembers.splice(index, 1);
+        setTeamMembers(updatedMembers);
+    };
+
+    const updateTeamMember = (index, field, value) => {
+        const updatedMembers = [...teamMembers];
+        updatedMembers[index][field] = value;
+        setTeamMembers(updatedMembers);
     };
     
     return (
         <div className="max-w-2xl mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-6">Create New Job Safety Analysis</h1>
+            <h1 className="text-2xl font-bold mb-6">Create New Level 2 Safety Analysis</h1>
             
             <Card className="mb-6">
                 <CardHeader>
                     <CardTitle className="flex items-center">
                         <FileText className="h-5 w-5 mr-2" />
-                        Job Details
+                        L2SA Details
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium mb-1">Job Type</label>
-                            <select className="w-full p-2 border rounded">
-                                <option>Working at Height</option>
-                                <option>Hot Work</option>
-                                <option>Confined Space</option>
-                                <option>Lifting Operation</option>
-                                <option>Electrical Work</option>
-                            </select>
+                            <label className="block text-sm font-medium mb-1">PTW Type</label>
+                            <div className="space-y-2">
+                                <label className="flex items-center">
+                                    <input type="radio" name="ptw-type" className="mr-2" />
+                                    <span className="flex items-center">
+                                        <span className="h-3 w-3 rounded-full bg-red-500 mr-2"></span>
+                                        Hot Work
+                                    </span>
+                                </label>
+                                <label className="flex items-center">
+                                    <input type="radio" name="ptw-type" className="mr-2" />
+                                    <span className="flex items-center">
+                                        <span className="h-3 w-3 rounded-full bg-yellow-500 mr-2"></span>
+                                        Critical Work
+                                    </span>
+                                </label>
+                                <label className="flex items-center">
+                                    <input type="radio" name="ptw-type" className="mr-2" />
+                                    <span className="flex items-center">
+                                        <span className="h-3 w-3 rounded-full bg-black mr-2"></span>
+                                        Breaking Containment
+                                    </span>
+                                </label>
+                                <label className="flex items-center">
+                                    <input type="radio" name="ptw-type" className="mr-2" />
+                                    <span className="flex items-center">
+                                        <span className="h-3 w-3 rounded-full bg-blue-500 mr-2"></span>
+                                        General Work
+                                    </span>
+                                </label>
+                            </div>
                         </div>
 
                         <div>
@@ -55,6 +95,17 @@ const JobInputPage = () => {
                                 <label className="block text-sm font-medium mb-1">
                                     <MapPin className="h-4 w-4 inline mr-1" />
                                     Location
+                                </label>
+                                <select className="w-full p-2 border rounded">
+                                    <option>Poleng</option>
+                                    <option>Surabaya</option>
+                                    <option>Madura</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">
+                                    <MapPin className="h-4 w-4 inline mr-1" />
+                                    Facility/Site
                                 </label>
                                 <select className="w-full p-2 border rounded">
                                     <option>Plant A - Ground Floor</option>
@@ -96,13 +147,15 @@ const JobInputPage = () => {
                                 <Users className="h-4 w-4 inline mr-1" />
                                 Work Team
                             </label>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-4 mb-2">
                                 <div>
                                     <label className="block text-sm mb-1">Team Size</label>
                                     <input 
                                         type="number" 
                                         className="w-full p-2 border rounded"
                                         min="1"
+                                        value={teamMembers.length}
+                                        readOnly
                                     />
                                 </div>
                                 <div>
@@ -112,6 +165,45 @@ const JobInputPage = () => {
                                         <option>Jane Smith</option>
                                     </select>
                                 </div>
+                            </div>
+
+                            <div className="border rounded p-3 bg-gray-50">
+                                <label className="block text-sm font-medium mb-2">Team Members</label>
+                                <div className="space-y-3">
+                                    {teamMembers.map((member, index) => (
+                                        <div key={index} className="flex items-center space-x-2">
+                                            <input
+                                                type="text"
+                                                className="flex-1 p-2 border rounded"
+                                                placeholder="Name"
+                                                value={member.name}
+                                                onChange={(e) => updateTeamMember(index, 'name', e.target.value)}
+                                            />
+                                            <input
+                                                type="text"
+                                                className="flex-1 p-2 border rounded"
+                                                placeholder="Role"
+                                                value={member.role}
+                                                onChange={(e) => updateTeamMember(index, 'role', e.target.value)}
+                                            />
+                                            {teamMembers.length > 1 && (
+                                                <button 
+                                                    className="p-1 text-red-500 hover:bg-red-50 rounded"
+                                                    onClick={() => removeTeamMember(index)}
+                                                >
+                                                    <X className="h-5 w-5" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                                <button 
+                                    className="mt-3 flex items-center text-sm text-blue-600 hover:text-blue-800"
+                                    onClick={addTeamMember}
+                                >
+                                    <Plus className="h-4 w-4 mr-1" />
+                                    Add Team Member
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -151,4 +243,4 @@ const JobInputPage = () => {
     );
 };
 
-export default JobInputPage;
+export default L2SAInputPage;
