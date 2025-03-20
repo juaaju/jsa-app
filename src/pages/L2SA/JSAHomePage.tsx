@@ -23,7 +23,7 @@ const JSAHomePage = () => {
         </div>
         <div 
           className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 cursor-pointer hover:bg-yellow-100"
-          onClick={() => navigate('/new-jsa2')}
+          onClick={() => navigate('/new-l1sa')}
         >
           <h3 className="font-bold mb-2">Create New L1SA</h3>
           <p className="text-sm text-gray-600">Start a new Level 1 Safety Analysis</p>

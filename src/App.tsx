@@ -27,7 +27,7 @@ function App() {
         <Route path="/analysis" element={<MainLayoutWrapper><RiskAnalysisPage /></MainLayoutWrapper>} />
         <Route path="/actions" element={<MainLayoutWrapper><RecommendedActionsPage /></MainLayoutWrapper>} />
         <Route path="/risk-register/*" element={<MainLayoutWrapper><RiskRegisterPage /></MainLayoutWrapper>} />
-        <Route path="/hazard-list" element={<MainLayoutWrapper><HazardListPage /></MainLayoutWrapper>} />
+        <Route path="/hazard-list/*" element={<MainLayoutWrapper><HazardListPage /></MainLayoutWrapper>} />
         <Route path="/top-risk-analysis" element={<MainLayoutWrapper><TopRiskAnalysisPage /></MainLayoutWrapper>} />
         <Route path="/l2sa-approvals" element={<MainLayoutWrapper><L2SAApprovalPage /></MainLayoutWrapper>} />
         <Route path="/tha" element={<MainLayoutWrapper><TaskHazardAssessmentPage /></MainLayoutWrapper>} />

@@ -1,156 +1,20 @@
-import React, { useState } from 'react';
-
-// Initial sample data based on the image
-const initialHazards = [
-  {
-    id: 'H-1.01',
-    category: 'H-1',
-    categoryName: 'Asphyxiates Hazards',
-    description: 'Drowning',
-    health: true,
-    safety: true,
-    security: false,
-    environment: true,
-    social: false,
-    sources: 'Working overboard, marine seismic operations, water transport'
-  },
-  {
-    id: 'H-1.02',
-    category: 'H-1',
-    categoryName: 'Asphyxiates Hazards',
-    description: 'Excessive CO2',
-    health: false,
-    safety: true,
-    security: false,
-    environment: true,
-    social: false,
-    sources: 'Areas with CO2 firefighting systems, such as turbine enclosures'
-  },
-  {
-    id: 'H-1.03',
-    category: 'H-1',
-    categoryName: 'Asphyxiates Hazards',
-    description: 'Excessive N2',
-    health: false,
-    safety: true,
-    security: false,
-    environment: false,
-    social: false,
-    sources: 'N2-purged vessels'
-  },
-  {
-    id: 'H-1.04',
-    category: 'H-1',
-    categoryName: 'Asphyxiates Hazards',
-    description: 'Halon',
-    health: false,
-    safety: true,
-    security: false,
-    environment: true,
-    social: false,
-    sources: 'Areas with Halon firefighting systems, such as turbine enclosures, electrical switchgear and battery rooms'
-  },
-  {
-    id: 'H-1.05',
-    category: 'H-1',
-    categoryName: 'Asphyxiates Hazards',
-    description: 'Low oxygen atmospheres',
-    health: false,
-    safety: true,
-    security: false,
-    environment: false,
-    social: false,
-    sources: 'Confined Spaces, Tanks'
-  },
-  {
-    id: 'H-1.06',
-    category: 'H-1',
-    categoryName: 'Asphyxiates Hazards',
-    description: 'Smoke (particulates in air)',
-    health: false,
-    safety: true,
-    security: false,
-    environment: true,
-    social: false,
-    sources: 'Welding/burning operations, fires'
-  },
-  {
-    id: 'H-1.07',
-    category: 'H-1',
-    categoryName: 'Asphyxiates Hazards',
-    description: 'Water depth (Diving/Underwater Ops)',
-    health: true,
-    safety: true,
-    security: false,
-    environment: false,
-    social: false,
-    sources: 'Diving Activities, ROV Activities, etc'
-  },
-  {
-    id: 'H-2.01',
-    category: 'H-2',
-    categoryName: 'Biological Hazards',
-    description: 'Poisonous plants (e.g. poison ivy and oak, stinging nettles, nightshade)',
-    health: true,
-    safety: false,
-    security: false,
-    environment: false,
-    social: false,
-    sources: 'Natural environment'
-  },
-  {
-    id: 'H-2.02',
-    category: 'H-2',
-    categoryName: 'Biological Hazards',
-    description: 'Large animals (e.g. dogs, crocodile, tiger)',
-    health: true,
-    safety: true,
-    security: false,
-    environment: false,
-    social: false,
-    sources: 'Natural environment'
-  },
-  {
-    id: 'H-2.03',
-    category: 'H-2',
-    categoryName: 'Biological Hazards',
-    description: 'Small animals (snakes, scorpions, lizards)',
-    health: true,
-    safety: true,
-    security: false,
-    environment: false,
-    social: false,
-    sources: 'Natural environment'
-  }
-];
-
-// Define hazard categories for dropdown selection
-const hazardCategories = [
-  { id: 'H-1', name: 'Asphyxiates Hazards' },
-  { id: 'H-2', name: 'Biological Hazards' },
-  { id: 'H-3', name: 'Chemical Hazards' },
-  { id: 'H-4', name: 'Electrical Hazards' },
-  { id: 'H-5', name: 'Gravitational Hazards' },
-  { id: 'H-6', name: 'Mechanical Hazards' },
-  { id: 'H-7', name: 'Motion Hazards' },
-  { id: 'H-8', name: 'Physical Hazards' },
-  { id: 'H-9', name: 'Pressure Hazards' },
-  { id: 'H-10', name: 'Radiation Hazards' },
-  { id: 'H-11', name: 'Sound Hazards' },
-  { id: 'H-12', name: 'Temperature Hazards' }
-];
+import React, { useState, useEffect } from 'react';
+import categoryService, { Category } from '../../services/categoryService';
+import hazardService, { Hazard } from '../../services/hazardService';
 
 const HazardListPage: React.FC = () => {
-  const [hazards, setHazards] = useState(initialHazards);
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [hazards, setHazards] = useState<Hazard[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [showAddForm, setShowAddForm] = useState<boolean>(false);
   const [editingHazardId, setEditingHazardId] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   
   // New hazard template
-  const emptyHazard = {
+  const emptyHazard: Hazard = {
     id: '',
-    category: '',
-    categoryName: '',
+    category_id: '',
     description: '',
     health: false,
     safety: false,
@@ -160,10 +24,71 @@ const HazardListPage: React.FC = () => {
     sources: ''
   };
   
-  const [newHazard, setNewHazard] = useState({ ...emptyHazard });
+  const [newHazard, setNewHazard] = useState<Hazard>({ ...emptyHazard });
+
+  // Fetch categories and hazards on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        // Fetch categories
+        const categoriesData = await categoryService.getAllCategories();
+        setCategories(categoriesData);
+        
+        // Fetch all hazards
+        const hazardsData = await hazardService.getAllHazards();
+        setHazards(hazardsData);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Failed to load data. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Fetch hazards by category when filter changes
+  useEffect(() => {
+    const fetchHazardsByCategory = async () => {
+      if (!filterCategory) {
+        // If no filter, get all hazards
+        try {
+          setIsLoading(true);
+          const hazardsData = await hazardService.getAllHazards();
+          setHazards(hazardsData);
+        } catch (err) {
+          console.error('Error fetching all hazards:', err);
+          setError('Failed to load hazards. Please try again later.');
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        // If filter is set, get hazards for that category
+        try {
+          setIsLoading(true);
+          const hazardsData = await hazardService.getHazardsByCategory(filterCategory);
+          setHazards(hazardsData);
+        } catch (err) {
+          console.error(`Error fetching hazards for category ${filterCategory}:`, err);
+          setError('Failed to load hazards for this category. Please try again later.');
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    if (categories.length > 0) {
+      fetchHazardsByCategory();
+    }
+  }, [filterCategory, categories.length]);
 
   // Handle input change for form fields
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value, type } = e.target;
     
     if (type === 'checkbox') {
@@ -172,12 +97,10 @@ const HazardListPage: React.FC = () => {
         ...newHazard,
         [name]: checked
       });
-    } else if (name === 'category') {
-      const selectedCategory = hazardCategories.find(cat => cat.id === value);
+    } else if (name === 'category_id') {
       setNewHazard({
         ...newHazard,
-        category: value,
-        categoryName: selectedCategory ? selectedCategory.name : ''
+        category_id: value
       });
     } else {
       setNewHazard({
@@ -188,60 +111,117 @@ const HazardListPage: React.FC = () => {
   };
 
   // Generate the next ID for a hazard in a category
-  const generateNextId = (category: string) => {
-    const categoryHazards = hazards.filter(h => h.category === category);
-    if (categoryHazards.length === 0) {
-      return `${category}.01`;
+  const generateNextId = async (categoryId: string): Promise<string> => {
+    try {
+      // Get all hazards for this category to determine next ID
+      const categoryHazards = await hazardService.getHazardsByCategory(categoryId);
+      
+      if (categoryHazards.length === 0) {
+        return `${categoryId}.01`;
+      }
+      
+      const maxIdNumber = Math.max(...categoryHazards.map(h => {
+        const idParts = h.id.split('.');
+        return parseInt(idParts[1]);
+      }));
+      
+      return `${categoryId}.${String(maxIdNumber + 1).padStart(2, '0')}`;
+    } catch (err) {
+      console.error('Error generating next ID:', err);
+      // Default fallback
+      return `${categoryId}.01`;
     }
-    
-    const maxIdNumber = Math.max(...categoryHazards.map(h => {
-      const idParts = h.id.split('.');
-      return parseInt(idParts[1]);
-    }));
-    
-    return `${category}.${String(maxIdNumber + 1).padStart(2, '0')}`;
   };
 
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
-    if (editingHazardId) {
-      // Update existing hazard
-      const updatedHazards = hazards.map(hazard => 
-        hazard.id === editingHazardId ? newHazard : hazard
-      );
-      setHazards(updatedHazards);
-      setEditingHazardId(null);
-    } else {
-      // Add new hazard with generated ID if not provided
-      const hazardId = newHazard.id || generateNextId(newHazard.category);
-      const hazardToAdd = {
-        ...newHazard,
-        id: hazardId
-      };
-      setHazards([...hazards, hazardToAdd]);
+    try {
+      if (editingHazardId) {
+        // Update existing hazard
+        await hazardService.updateHazard(editingHazardId, newHazard);
+        
+        // Refresh the hazards list
+        if (filterCategory) {
+          const updatedHazards = await hazardService.getHazardsByCategory(filterCategory);
+          setHazards(updatedHazards);
+        } else {
+          const updatedHazards = await hazardService.getAllHazards();
+          setHazards(updatedHazards);
+        }
+        
+        setEditingHazardId(null);
+      } else {
+        // Add new hazard with generated ID if not provided
+        const hazardToAdd = { ...newHazard };
+        if (!hazardToAdd.id) {
+          hazardToAdd.id = await generateNextId(hazardToAdd.category_id);
+        }
+        
+        // Send to the API
+        await hazardService.createHazard(hazardToAdd);
+        
+        // Refresh the hazards list
+        if (filterCategory) {
+          const updatedHazards = await hazardService.getHazardsByCategory(filterCategory);
+          setHazards(updatedHazards);
+        } else {
+          const updatedHazards = await hazardService.getAllHazards();
+          setHazards(updatedHazards);
+        }
+      }
+      
+      // Reset form
+      setNewHazard({ ...emptyHazard });
+      setShowAddForm(false);
+    } catch (err) {
+      console.error('Error saving hazard:', err);
+      setError('Failed to save hazard. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-    
-    // Reset form
-    setNewHazard({ ...emptyHazard });
-    setShowAddForm(false);
   };
 
   // Start editing a hazard
-  const handleEdit = (id: string) => {
-    const hazardToEdit = hazards.find(h => h.id === id);
-    if (hazardToEdit) {
-      setNewHazard({ ...hazardToEdit });
+  const handleEdit = async (id: string) => {
+    try {
+      setIsLoading(true);
+      const hazardToEdit = await hazardService.getHazardById(id);
+      
+      setNewHazard(hazardToEdit);
       setEditingHazardId(id);
       setShowAddForm(true);
+    } catch (err) {
+      console.error(`Error fetching hazard ${id} for editing:`, err);
+      setError('Failed to load hazard details for editing.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   // Delete a hazard
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this hazard?')) {
-      setHazards(hazards.filter(hazard => hazard.id !== id));
+      try {
+        setIsLoading(true);
+        await hazardService.deleteHazard(id);
+        
+        // Refresh the hazards list
+        if (filterCategory) {
+          const updatedHazards = await hazardService.getHazardsByCategory(filterCategory);
+          setHazards(updatedHazards);
+        } else {
+          const updatedHazards = await hazardService.getAllHazards();
+          setHazards(updatedHazards);
+        }
+      } catch (err) {
+        console.error(`Error deleting hazard ${id}:`, err);
+        setError('Failed to delete hazard.');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -253,15 +233,19 @@ const HazardListPage: React.FC = () => {
   };
 
   // Group hazards by category for display
-  const groupedHazards: Record<string, typeof hazards> = {};
-  hazards
-    .filter(h => !filterCategory || h.category === filterCategory)
-    .forEach(hazard => {
-      if (!groupedHazards[hazard.category]) {
-        groupedHazards[hazard.category] = [];
-      }
-      groupedHazards[hazard.category].push(hazard);
-    });
+  const groupedHazards: Record<string, Hazard[]> = {};
+  hazards.forEach(hazard => {
+    if (!groupedHazards[hazard.category_id]) {
+      groupedHazards[hazard.category_id] = [];
+    }
+    groupedHazards[hazard.category_id].push(hazard);
+  });
+  
+  // Get category name by ID
+  const getCategoryName = (categoryId: string): string => {
+    const category = categories.find(c => c.category_id === categoryId);
+    return category ? category.name : 'Unknown Category';
+  };
 
   return (
     <div className="container mx-auto p-4">
@@ -269,6 +253,22 @@ const HazardListPage: React.FC = () => {
         <div className="bg-gray-900 p-4 text-white">
           <h1 className="text-xl font-bold text-center">Hazard List</h1>
         </div>
+        
+        {/* Error display */}
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 m-4 rounded relative">
+            <span className="block sm:inline">{error}</span>
+            <span 
+              className="absolute top-0 bottom-0 right-0 px-4 py-3"
+              onClick={() => setError(null)}
+            >
+              <svg className="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <title>Close</title>
+                <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
+              </svg>
+            </span>
+          </div>
+        )}
         
         <div className="p-4">
           <div className="flex justify-between mb-4">
@@ -278,11 +278,12 @@ const HazardListPage: React.FC = () => {
                 value={filterCategory} 
                 onChange={e => setFilterCategory(e.target.value)}
                 className="border rounded p-1"
+                disabled={isLoading}
               >
                 <option value="">All Categories</option>
-                {hazardCategories.map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.id} - {category.name}
+                {categories.map(category => (
+                  <option key={category.category_id} value={category.category_id}>
+                    {category.category_id} - {category.name}
                   </option>
                 ))}
               </select>
@@ -295,10 +296,18 @@ const HazardListPage: React.FC = () => {
                 setShowAddForm(true);
               }}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+              disabled={isLoading}
             >
               Add New Hazard
             </button>
           </div>
+
+          {/* Loading indicator */}
+          {isLoading && (
+            <div className="flex justify-center my-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500"></div>
+            </div>
+          )}
 
           {/* Add/Edit Hazard Form */}
           {showAddForm && (
@@ -312,16 +321,17 @@ const HazardListPage: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium mb-1">Hazard Category</label>
                     <select
-                      name="category"
-                      value={newHazard.category}
+                      name="category_id"
+                      value={newHazard.category_id}
                       onChange={handleInputChange}
                       required
                       className="w-full p-2 border rounded"
+                      disabled={isLoading}
                     >
                       <option value="">Select Category</option>
-                      {hazardCategories.map(category => (
-                        <option key={category.id} value={category.id}>
-                          {category.id} - {category.name}
+                      {categories.map(category => (
+                        <option key={category.category_id} value={category.category_id}>
+                          {category.category_id} - {category.name}
                         </option>
                       ))}
                     </select>
@@ -336,7 +346,7 @@ const HazardListPage: React.FC = () => {
                       onChange={handleInputChange}
                       placeholder="Leave blank for auto-generation"
                       className="w-full p-2 border rounded"
-                      disabled={!!editingHazardId}
+                      disabled={!!editingHazardId || isLoading}
                     />
                   </div>
                 </div>
@@ -350,6 +360,7 @@ const HazardListPage: React.FC = () => {
                     onChange={handleInputChange}
                     required
                     className="w-full p-2 border rounded"
+                    disabled={isLoading}
                   />
                 </div>
                 
@@ -364,6 +375,7 @@ const HazardListPage: React.FC = () => {
                         checked={newHazard.health}
                         onChange={handleInputChange}
                         className="mr-2"
+                        disabled={isLoading}
                       />
                       <label htmlFor="health">Health</label>
                     </div>
@@ -376,6 +388,7 @@ const HazardListPage: React.FC = () => {
                         checked={newHazard.safety}
                         onChange={handleInputChange}
                         className="mr-2"
+                        disabled={isLoading}
                       />
                       <label htmlFor="safety">Safety</label>
                     </div>
@@ -388,6 +401,7 @@ const HazardListPage: React.FC = () => {
                         checked={newHazard.security}
                         onChange={handleInputChange}
                         className="mr-2"
+                        disabled={isLoading}
                       />
                       <label htmlFor="security">Security</label>
                     </div>
@@ -400,6 +414,7 @@ const HazardListPage: React.FC = () => {
                         checked={newHazard.environment}
                         onChange={handleInputChange}
                         className="mr-2"
+                        disabled={isLoading}
                       />
                       <label htmlFor="environment">Environment</label>
                     </div>
@@ -412,6 +427,7 @@ const HazardListPage: React.FC = () => {
                         checked={newHazard.social}
                         onChange={handleInputChange}
                         className="mr-2"
+                        disabled={isLoading}
                       />
                       <label htmlFor="social">Social</label>
                     </div>
@@ -426,6 +442,7 @@ const HazardListPage: React.FC = () => {
                     onChange={handleInputChange}
                     rows={2}
                     className="w-full p-2 border rounded"
+                    disabled={isLoading}
                   />
                 </div>
                 
@@ -434,6 +451,7 @@ const HazardListPage: React.FC = () => {
                     type="button"
                     onClick={handleCancel}
                     className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100"
+                    disabled={isLoading}
                   >
                     Cancel
                   </button>
@@ -441,6 +459,7 @@ const HazardListPage: React.FC = () => {
                   <button
                     type="submit"
                     className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    disabled={isLoading}
                   >
                     {editingHazardId ? 'Update Hazard' : 'Add Hazard'}
                   </button>
@@ -466,13 +485,14 @@ const HazardListPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {Object.keys(groupedHazards).map(category => {
-                  const categoryData = groupedHazards[category][0];
+                {!isLoading && Object.keys(groupedHazards).length > 0 && Object.keys(groupedHazards).map(category => {
                   return (
                     <React.Fragment key={category}>
                       <tr className="bg-gray-200">
                         <td className="border border-gray-300 p-2 font-bold">{category}</td>
-                        <td className="border border-gray-300 p-2 font-bold" colSpan={8}>{categoryData.categoryName}</td>
+                        <td className="border border-gray-300 p-2 font-bold" colSpan={8}>
+                          {getCategoryName(category)}
+                        </td>
                       </tr>
                       {groupedHazards[category].map(hazard => (
                         <tr key={hazard.id}>
@@ -498,12 +518,14 @@ const HazardListPage: React.FC = () => {
                             <button 
                               onClick={() => handleEdit(hazard.id)}
                               className="text-blue-600 hover:text-blue-800 mr-2"
+                              disabled={isLoading}
                             >
                               Edit
                             </button>
                             <button 
                               onClick={() => handleDelete(hazard.id)}
                               className="text-red-600 hover:text-red-800"
+                              disabled={isLoading}
                             >
                               Delete
                             </button>
@@ -514,7 +536,7 @@ const HazardListPage: React.FC = () => {
                   );
                 })}
                 
-                {Object.keys(groupedHazards).length === 0 && (
+                {!isLoading && Object.keys(groupedHazards).length === 0 && (
                   <tr>
                     <td colSpan={9} className="border border-gray-300 p-4 text-center text-gray-500">
                       No hazards found. {filterCategory && 'Try changing the filter or '} Add a new hazard to get started.
